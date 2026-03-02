@@ -34,7 +34,7 @@
   }
 
   header {
-    padding: 44px 20px 24px;
+    padding: 44px 20px 20px;
     border-bottom: 1px solid var(--border);
     max-width: 480px;
     margin: 0 auto;
@@ -94,15 +94,45 @@
 
   .next-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 
-  .filter-bar {
+  /* History toggle lives in header now */
+  .history-toggle {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 13px;
+    border-radius: 100px;
+    border: 1px solid #3a4455;
+    background: transparent;
+    color: #8a95aa;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .history-toggle:hover { border-color: var(--muted); color: var(--text); }
+  .history-toggle.on { border-color: #4a5568; color: #c0c8d8; background: #1e2330; }
+
+  .history-toggle .toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .history-toggle.on .toggle-icon { transform: rotate(180deg); }
+
+  .toolbar {
     max-width: 480px;
     margin: 0 auto;
-    padding: 12px 20px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-bar {
     display: flex;
     gap: 7px;
     overflow-x: auto;
     scrollbar-width: none;
-    border-bottom: 1px solid var(--border);
   }
   .filter-bar::-webkit-scrollbar { display: none; }
 
@@ -156,9 +186,12 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    transition: transform 0.12s;
+    transition: transform 0.12s, opacity 0.2s, max-height 0.25s;
   }
   .card:active { transform: scale(0.98); }
+
+  .card.past { opacity: 0.35; }
+  .card.history-hidden { display: none; }
 
   .date-block {
     display: flex;
@@ -203,6 +236,8 @@
     letter-spacing: 0.05em;
   }
   .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
+
+  .month-group.all-hidden { display: none; }
 </style>
 </head>
 <body>
@@ -219,17 +254,23 @@
     </div>
     <div class="next-dot" id="next-dot"></div>
   </div>
+  <button class="history-toggle" id="history-toggle">
+    <span class="toggle-icon">▾</span>
+    Show history
+  </button>
 </header>
 
-<div class="filter-bar" id="filter-bar">
-  <button class="chip active" data-room="0">All</button>
-  <button class="chip" data-room="1">Room 1</button>
-  <button class="chip" data-room="2">Room 2</button>
-  <button class="chip" data-room="3">Room 3</button>
-  <button class="chip" data-room="4">Room 4</button>
-  <button class="chip" data-room="5">Room 5</button>
-  <button class="chip" data-room="6">Room 6</button>
-  <button class="chip" data-room="7">Room 7</button>
+<div class="toolbar" id="toolbar">
+  <div class="filter-bar" id="filter-bar">
+    <button class="chip active" data-room="0">All</button>
+    <button class="chip" data-room="1">Room 1</button>
+    <button class="chip" data-room="2">Room 2</button>
+    <button class="chip" data-room="3">Room 3</button>
+    <button class="chip" data-room="4">Room 4</button>
+    <button class="chip" data-room="5">Room 5</button>
+    <button class="chip" data-room="6">Room 6</button>
+    <button class="chip" data-room="7">Room 7</button>
+  </div>
 </div>
 
 <div class="content" id="content"></div>
@@ -243,7 +284,6 @@ const data = [{"date":"2026-02-21","expectedRoom":1},{"date":"2026-02-25","expec
 
 const today = new Date(); today.setHours(0,0,0,0);
 
-// Next upcoming
 const nextItem = data.find(item => new Date(item.date + 'T12:00:00') >= today);
 if (nextItem) {
   const d = new Date(nextItem.date + 'T12:00:00');
@@ -254,6 +294,22 @@ if (nextItem) {
 }
 
 let activeRoom = 0;
+let showHistory = false;
+
+function applyHistoryVisibility() {
+  const toggle = document.getElementById('history-toggle');
+  toggle.classList.toggle('on', showHistory);
+  toggle.innerHTML = `<span class="toggle-icon" style="font-size:12px;transition:transform 0.2s;${showHistory ? 'transform:rotate(180deg)' : ''}">▾</span> ${showHistory ? 'Hide history' : 'Show history'}`;
+
+  document.querySelectorAll('.month-group').forEach(group => {
+    group.querySelectorAll('.card.past').forEach(card => {
+      card.classList.toggle('history-hidden', !showHistory);
+    });
+    const allCards = group.querySelectorAll('.card');
+    const allPast = Array.from(allCards).every(c => c.classList.contains('past'));
+    group.classList.toggle('all-hidden', allPast && !showHistory);
+  });
+}
 
 function render() {
   const filtered = activeRoom === 0 ? data : data.filter(i => i.expectedRoom === activeRoom);
@@ -266,6 +322,8 @@ function render() {
   }
 
   let lastKey = null;
+  let currentGroup = null;
+
   filtered.forEach(item => {
     const d = new Date(item.date + 'T12:00:00');
     const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -273,15 +331,17 @@ function render() {
 
     if (key !== lastKey) {
       lastKey = key;
+      currentGroup = document.createElement('div');
+      currentGroup.className = 'month-group';
       const mh = document.createElement('div');
       mh.className = 'month-header';
       mh.innerHTML = `<span class="month-name">${MONTHS[d.getMonth()]} ${d.getFullYear()}</span><div class="month-line"></div>`;
-      content.appendChild(mh);
+      currentGroup.appendChild(mh);
+      content.appendChild(currentGroup);
     }
 
     const card = document.createElement('div');
-    card.className = 'card';
-    card.style.opacity = isPast ? '0.35' : '1';
+    card.className = 'card' + (isPast ? ' past' : '');
     card.innerHTML = `
       <div class="date-block">
         <div class="date-day">${d.getDate()}</div>
@@ -290,8 +350,10 @@ function render() {
       <div class="divider"></div>
       <div class="room-name">Room ${item.expectedRoom}</div>
       <div class="room-dot" style="background:${COLORS[item.expectedRoom]}"></div>`;
-    content.appendChild(card);
+    currentGroup.appendChild(card);
   });
+
+  applyHistoryVisibility();
 }
 
 document.getElementById('filter-bar').addEventListener('click', e => {
@@ -301,6 +363,11 @@ document.getElementById('filter-bar').addEventListener('click', e => {
   chip.classList.add('active');
   activeRoom = parseInt(chip.dataset.room);
   render();
+});
+
+document.getElementById('history-toggle').addEventListener('click', () => {
+  showHistory = !showHistory;
+  applyHistoryVisibility();
 });
 
 render();
