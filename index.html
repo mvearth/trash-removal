@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="A simple household chore tracker showing whose turn it is to take out the trash, rotating across 7 rooms.">
 <title>Trash Schedule</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -14,14 +15,16 @@
     --accent: #e8c97a;
     --text: #f0f2f8;
     --muted: #8a95aa;
-    --c1: #7ac8e8;
-    --c2: #7ae8b4;
-    --c3: #e87a9c;
-    --c4: #c87ae8;
-    --c5: #e8c97a;
-    --c6: #e8a07a;
-    --c7: #a0e87a;
+    --c1: #7CB5DE;
+    --c2: #9D7CDE;
+    --c3: #DE7CDE;
+    --c4: #DE7C9D;
+    --c5: #DE957C;
+    --c6: #A5DE7C;
+    --c7: #7CDEB5;
   }
+
+  html, body { overflow-x: hidden; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,27 +36,55 @@
     padding-bottom: 48px;
   }
 
+  body::before {
+    content: '';
+    position: fixed;
+    top: -10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(232,201,122,0.1) 0%, rgba(232,201,122,0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='1'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 0;
+  }
+
   header {
     padding: 44px 20px 20px;
     border-bottom: 1px solid var(--border);
     max-width: 480px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
 
   .label {
-    font-size: 10px;
-    letter-spacing: 0.25em;
+    font-size: 11px;
+    letter-spacing: 0.22em;
     color: #8a95aa;
     text-transform: uppercase;
     margin-bottom: 6px;
+    font-weight: 500;
   }
 
   h1 {
     font-family: 'DM Serif Display', serif;
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 400;
     line-height: 1.1;
     margin-bottom: 20px;
+    letter-spacing: -0.01em;
   }
 
   h1 em { font-style: italic; color: var(--accent); }
@@ -66,30 +97,32 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    box-shadow: 0 2px 4px rgba(10,10,8,0.4), 0 8px 24px rgba(232,201,122,0.08);
   }
 
   .next-icon { font-size: 24px; line-height: 1; }
   .next-body { flex: 1; }
 
   .next-label {
-    font-size: 9px;
-    letter-spacing: 0.2em;
+    font-size: 11px;
+    letter-spacing: 0.18em;
     color: var(--accent);
     text-transform: uppercase;
     margin-bottom: 3px;
+    font-weight: 500;
   }
 
   .next-title {
     font-family: 'DM Serif Display', serif;
-    font-size: 17px;
+    font-size: 19px;
     color: var(--text);
   }
 
   .next-date {
-    font-size: 10px;
-    color: #8a95aa;
+    font-size: 12px;
+    color: var(--muted);
     margin-top: 2px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
   }
 
   .next-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
@@ -100,7 +133,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 5px 13px;
+    min-height: 40px;
+    padding: 0 16px;
     border-radius: 100px;
     border: 1px solid #3a4455;
     background: transparent;
@@ -113,6 +147,7 @@
     white-space: nowrap;
   }
   .history-toggle:hover { border-color: var(--muted); color: var(--text); }
+  .history-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .history-toggle.on { border-color: #4a5568; color: #c0c8d8; background: #1e2330; }
 
   .history-toggle .toggle-icon {
@@ -126,6 +161,8 @@
     margin: 0 auto;
     padding: 10px 20px;
     border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
   }
 
   .filter-bar {
@@ -133,12 +170,14 @@
     gap: 7px;
     overflow-x: auto;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
   .filter-bar::-webkit-scrollbar { display: none; }
 
   .chip {
     flex-shrink: 0;
-    padding: 5px 13px;
+    min-height: 40px;
+    padding: 0 16px;
     border-radius: 100px;
     border: 1px solid #3a4455;
     background: #1e2330;
@@ -148,14 +187,19 @@
     cursor: pointer;
     transition: all 0.15s;
     letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
   }
   .chip.active { background: var(--accent); border-color: var(--accent); color: #0d0f14; font-weight: 500; }
   .chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .content {
     max-width: 480px;
     margin: 0 auto;
     padding: 12px 16px;
+    position: relative;
+    z-index: 1;
   }
 
   .month-header {
@@ -170,12 +214,16 @@
     font-family: 'DM Serif Display', serif;
     font-size: 12px;
     color: #8a95aa;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     white-space: nowrap;
+    font-weight: 400;
+    margin: 0;
   }
 
   .month-line { flex: 1; height: 1px; background: var(--border); }
+
+  .card-list { list-style: none; padding: 0; margin: 0; }
 
   .card {
     background: var(--surface);
@@ -186,9 +234,13 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    transition: transform 0.12s, opacity 0.2s, max-height 0.25s;
+    transition: transform 0.12s, opacity 0.2s, border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 2px rgba(6,8,14,0.4), 0 4px 12px rgba(10,14,26,0.35);
   }
   .card:active { transform: scale(0.98); }
+  @media (hover: hover) {
+    .card:hover { border-color: #3a4152; box-shadow: 0 2px 6px rgba(6,8,14,0.45), 0 8px 20px rgba(10,14,26,0.3); transform: translateY(-1px); }
+  }
 
   .card.past { opacity: 0.35; }
   .card.history-hidden { display: none; }
@@ -210,9 +262,9 @@
   }
 
   .date-dow {
-    font-size: 9px;
-    color: #8a95aa;
-    letter-spacing: 0.12em;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     margin-top: 3px;
   }
@@ -228,16 +280,17 @@
 
   .room-name {
     font-family: 'DM Serif Display', serif;
-    font-size: 17px;
+    font-size: 18px;
     color: var(--text);
   }
 
   .turn-position {
-    font-size: 9px;
+    font-size: 12px;
     color: var(--muted);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-top: 3px;
+    font-weight: 500;
   }
   .turn-position.now { color: var(--accent); }
 
@@ -253,21 +306,52 @@
   .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
 
   .month-group.all-hidden { display: none; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card {
+      animation: card-in 0.28s ease both;
+    }
+    .card.past {
+      animation-name: card-in-past;
+    }
+  }
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes card-in-past {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="label">🗑️ Trash Removal</div>
+  <div class="label"><span aria-hidden="true">🗑️</span> Trash Removal</div>
   <h1>Whose <em>Turn</em> Is It?</h1>
   <div class="next-card" id="next-card" style="display:none">
-    <div class="next-icon">🗑️</div>
+    <div class="next-icon" aria-hidden="true">🗑️</div>
     <div class="next-body">
       <div class="next-label">Current Turn</div>
       <div class="next-title" id="next-title">—</div>
       <div class="next-date" id="next-date">—</div>
     </div>
-    <div class="next-dot" id="next-dot"></div>
+    <div class="next-dot" id="next-dot" aria-hidden="true"></div>
   </div>
   <button class="history-toggle" id="history-toggle">
     <span class="toggle-icon">▾</span>
@@ -275,7 +359,7 @@
   </button>
 </header>
 
-<div class="toolbar" id="toolbar">
+<nav class="toolbar" id="toolbar" aria-label="Filter by room">
   <div class="filter-bar" id="filter-bar">
     <button class="chip active" data-room="0">All</button>
     <button class="chip" data-room="1">Room 1</button>
@@ -286,9 +370,9 @@
     <button class="chip" data-room="6">Room 6</button>
     <button class="chip" data-room="7">Room 7</button>
   </div>
-</div>
+</nav>
 
-<div class="content" id="content"></div>
+<main class="content" id="content"></main>
 
 <script>
 const COLORS = ['','var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)'];
@@ -352,13 +436,14 @@ function render() {
   content.innerHTML = '';
 
   if (!filtered.length) {
-    content.innerHTML = `<div class="empty"><div class="empty-icon">🗑️</div>No entries found.</div>`;
+    content.innerHTML = `<div class="empty"><div class="empty-icon" aria-hidden="true">🗑️</div>No entries found.</div>`;
     return;
   }
 
   let lastKey = null;
   let currentGroup = null;
 
+  let cardIndex = 0;
   filtered.forEach(item => {
     const due = new Date(item.date + 'T12:00:00');   // removal day
     const d = turnStarts.get(item.date);              // first day of the turn
@@ -373,13 +458,19 @@ function render() {
       currentGroup.className = 'month-group';
       const mh = document.createElement('div');
       mh.className = 'month-header';
-      mh.innerHTML = `<span class="month-name">${MONTHS[d.getMonth()]} ${d.getFullYear()}</span><div class="month-line"></div>`;
+      mh.innerHTML = `<h2 class="month-name">${MONTHS[d.getMonth()]} ${d.getFullYear()}</h2><div class="month-line" aria-hidden="true"></div>`;
       currentGroup.appendChild(mh);
       content.appendChild(currentGroup);
+
+      const currentList = document.createElement('ul');
+      currentList.className = 'card-list';
+      currentGroup.appendChild(currentList);
     }
 
-    const card = document.createElement('div');
+    const card = document.createElement('li');
     card.className = 'card' + (isPast ? ' past' : '');
+    const delay = Math.min(cardIndex, 12) * 30;
+    if (delay > 0) card.style.animationDelay = delay + 'ms';
     card.innerHTML = `
       <div class="date-block">
         <div class="date-day">${d.getDate()}</div>
@@ -390,8 +481,9 @@ function render() {
         <div class="room-name">Room ${item.expectedRoom}</div>
         <div class="turn-position${position === ORDINALS[0] ? ' now' : ''}">${detail}</div>
       </div>
-      <div class="room-dot" style="background:${COLORS[item.expectedRoom]}"></div>`;
-    currentGroup.appendChild(card);
+      <div class="room-dot" aria-hidden="true" style="background:${COLORS[item.expectedRoom]}"></div>`;
+    currentGroup.querySelector('.card-list').appendChild(card);
+    cardIndex++;
   });
 
   applyHistoryVisibility();
